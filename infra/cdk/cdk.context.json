@@ -1,0 +1,6 @@
+{
+  "ssm:account=659551386596:parameterName=/sg/shared/db-endpoint:region=ap-south-1": "sguserservicedev-aurora2cbab212-q0yjnyg4voaf.cluster-cjusygkcsccz.ap-south-1.rds.amazonaws.com",
+  "ssm:account=659551386596:parameterName=/sg/shared/admin-secret-arn:region=ap-south-1": "arn:aws:secretsmanager:ap-south-1:659551386596:secret:sg/user-service/db-admin-Oyursu",
+  "ssm:account=659551386596:parameterName=/sg/shared/signing-key-arn:region=ap-south-1": "arn:aws:kms:ap-south-1:659551386596:key/388492f8-9ae2-4ca4-9598-6eebbbd3c3eb",
+  "ssm:account=659551386596:parameterName=/sg/shared/signing-key-id:region=ap-south-1": "388492f8-9ae2-4ca4-9598-6eebbbd3c3eb"
+}
