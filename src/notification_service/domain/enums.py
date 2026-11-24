@@ -15,6 +15,7 @@ class Purpose(StrEnum):
     BILL = "BILL"
     PROMO = "PROMO"
     OTP = "OTP"
+    STAFF = "STAFF"  # employee reminders (inventory-service); utility, no marketing consent
 
 
 class MessageStatus(StrEnum):
@@ -89,7 +90,15 @@ class CampaignStatus(StrEnum):
     CANCELLED = "CANCELLED"
 
 
-TEMPLATE_CODE_RE = r"^(BILL|OTP|PROMO_[A-Z0-9_]{1,30})$"
+# Platform codes (shared number, seeded by migrations, read-only for tenants) + tenant PROMO_*.
+PLATFORM_TEMPLATE_CODES = (
+    "BILL",
+    "OTP",
+    "STAFF_COUNT_DUE",
+    "STAFF_HANDOVER",
+    "STAFF_DEDUCTION",
+)
+TEMPLATE_CODE_RE = r"^(" + "|".join(PLATFORM_TEMPLATE_CODES) + r"|PROMO_[A-Z0-9_]{1,30})$"
 E164_RE = r"^\+[1-9]\d{7,14}$"
 _E164 = re.compile(E164_RE)
 

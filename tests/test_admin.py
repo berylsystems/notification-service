@@ -156,6 +156,10 @@ def test_templates_and_settings(admin_url: str, wired: LocalRsaSigner) -> None:
     # platform templates on the shared number can't be overridden per tenant
     assert call("PUT", "/notify/templates", {**body, "code": "BILL"}, token)[0] == 422
     assert call("PUT", "/notify/templates", {**body, "code": "OTP"}, token)[0] == 422
+    for code in ("STAFF_COUNT_DUE", "STAFF_HANDOVER", "STAFF_DEDUCTION"):
+        assert call("PUT", "/notify/templates", {**body, "code": code}, token)[0] == 422
+    staff = {(r["code"], r["scope"], r["category"], r["provider_template_name"]) for r in rows}
+    assert ("STAFF_DEDUCTION", "PLATFORM", "UTILITY", "sg_staff_deduction") in staff
     assert call("PUT", "/notify/templates", {**body, "category": "UTILITY"}, token)[0] == 422
 
     assert call("GET", "/notify/settings", token=token)[1] == {"promo_cap_days": 7}

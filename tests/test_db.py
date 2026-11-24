@@ -19,7 +19,7 @@ from notification_service.services import customers
 
 def test_migrations_applied(admin_url: str, app_url: str) -> None:
     rows = admin_fetch(admin_url, "SELECT version_num FROM alembic_version_notify")
-    assert [r[0] for r in rows] == ["0001"]
+    assert [r[0] for r in rows] == ["0002"]
     tables = {
         r[0]
         for r in admin_fetch(
@@ -73,7 +73,7 @@ def test_platform_templates_readable_not_writable(admin_url: str, engine: Any) -
     t = new_tenant(admin_url)
     with tenant_session(engine, t) as s:
         codes = {r[0] for r in s.execute(text("SELECT code FROM wa_template")).all()}
-        assert {"BILL", "OTP"} <= codes
+        assert {"BILL", "OTP", "STAFF_COUNT_DUE", "STAFF_HANDOVER", "STAFF_DEDUCTION"} <= codes
         updated = s.execute(
             text("UPDATE wa_template SET status = 'REJECTED' WHERE tenant_id IS NULL")
         ).rowcount  # type: ignore[attr-defined]

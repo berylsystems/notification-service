@@ -105,8 +105,8 @@ class OptOutRequest(_Model):
 
 
 class TemplateUpsertRequest(_Model):
-    """Tenant mapping of a promotion template. BILL / OTP are platform templates on the shared
-    number and can't be overridden per tenant (they're managed by the platform operator)."""
+    """Tenant mapping of a promotion template. BILL / OTP / STAFF_* are platform templates on the
+    shared number and can't be overridden per tenant (they're managed by the platform operator)."""
 
     code: str = Field(pattern=r"^PROMO_[A-Z0-9_]{1,30}$", examples=["PROMO_WEEKEND"])
     provider_template_name: str = Field(min_length=1, max_length=512)

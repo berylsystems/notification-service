@@ -277,3 +277,33 @@ def test_handler_reports_only_failed_items(
     out = sender_handler.handler(event, _Ctx())  # type: ignore[arg-type]
     assert out == {"batchItemFailures": [{"itemIdentifier": "m2"}, {"itemIdentifier": "m3"}]}
     assert len(provider.sent) == 1
+
+
+def test_staff_reminder_sent_without_consent(
+    admin_url: str, engine: Any, provider: FakeProvider
+) -> None:
+    """STAFF (inventory reminders) is utility: no marketing consent, no frequency cap."""
+    t = new_tenant(admin_url)
+    to = phone()
+    sender.handle(engine, provider, consent_msg(t, to, "OPTED_OUT"))  # irrelevant for STAFF
+    for code, name in (
+        ("STAFF_COUNT_DUE", "sg_staff_count_due"),
+        ("STAFF_HANDOVER", "sg_staff_handover"),
+        ("STAFF_DEDUCTION", "sg_staff_deduction"),
+    ):
+        msg = send_msg(t, to, "STAFF", template_code=code, params=["Acme", "Bar set"],
+                       ref_type="custody_kit")  # fmt: skip
+        assert sender.handle(engine, provider, msg) == "SENT"
+        assert provider.sent[-1].template_name == name
+        assert _row(admin_url, t, msg["ref_id"]).category == "UTILITY"
+    assert len(provider.sent) == 3
+
+
+def test_staff_templates_seeded_pending(
+    admin_url: str, engine: Any, provider: FakeProvider
+) -> None:
+    t = new_tenant(admin_url, approve_platform=False)
+    admin_exec(admin_url, "UPDATE wa_template SET status = 'PENDING' WHERE tenant_id IS NULL")
+    msg = send_msg(t, phone(), "STAFF", template_code="STAFF_HANDOVER")
+    assert sender.handle(engine, provider, msg) == "FAILED"
+    assert _row(admin_url, t, msg["ref_id"]).skip_reason == "TEMPLATE_NOT_APPROVED"

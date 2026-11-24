@@ -93,7 +93,9 @@ def send_msg(tenant_id: UUID, to: str, purpose: str = "BILL", **extra: Any) -> d
         "tenant_id": str(tenant_id),
         "outlet_id": None,
         "to": to,
-        "template_code": {"BILL": "BILL", "OTP": "OTP"}.get(purpose, "PROMO_WEEKEND"),
+        "template_code": {"BILL": "BILL", "OTP": "OTP", "STAFF": "STAFF_COUNT_DUE"}.get(
+            purpose, "PROMO_WEEKEND"
+        ),
         "language": "en",
         "params": ["Andheri Foods", "A-0001", "540.00"],
         "buttons": [],

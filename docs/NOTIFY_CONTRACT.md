@@ -1,9 +1,9 @@
 # notification-service: the `sg-notify-send` queue contract (v1)
 
-Producers (order-service e-bills and consent, user-service OTP / password reset, this service's
-campaign scheduler) put JSON messages on the SQS standard queue **`sg-notify-send`**. The sender
-Lambda consumes them. Delivery is **at-least-once**, so every message must be safe to receive
-twice. The sender guarantees that, as described below.
+Producers (order-service e-bills and consent, user-service OTP / password reset, inventory-service
+STAFF reminders, this service's campaign scheduler) put JSON messages on the SQS standard queue
+**`sg-notify-send`**. The sender Lambda consumes them. Delivery is **at-least-once**, so every
+message must be safe to receive twice. The sender guarantees that, as described below.
 
 - **Queue:** `arn:aws:sqs:ap-south-1:659551386596:sg-notify-send`. The name is fixed. The URL is
   `https://sqs.ap-south-1.amazonaws.com/659551386596/sg-notify-send`. Both are also in SSM at
@@ -40,11 +40,11 @@ The `type` field picks one of two message types. If `type` is missing, the messa
 |---|---|---|
 | `v` | yes | `1` |
 | `type` | no | `"SEND"` (the default) |
-| `purpose` | yes | `BILL`, `PROMO` or `OTP` |
+| `purpose` | yes | `BILL`, `PROMO`, `OTP` or `STAFF` |
 | `tenant_id` | yes | uuid. Every row is stored under this tenant (RLS). |
 | `outlet_id` | no | uuid or `null` (OTP has no outlet) |
 | `to` | yes | E.164 phone number with a `+` (`^\+[1-9]\d{7,14}$`) |
-| `template_code` | yes | `BILL`, `OTP` or `PROMO_[A-Z0-9_]{1,30}`. Mapped to the provider's template name in `wa_template`. A tenant row overrides the platform row. |
+| `template_code` | yes | `BILL`, `OTP`, `STAFF_COUNT_DUE`, `STAFF_HANDOVER`, `STAFF_DEDUCTION` or `PROMO_[A-Z0-9_]{1,30}`. Mapped to the provider's template name in `wa_template`. A tenant row overrides the platform row. |
 | `language` | no | defaults to `en`. Part of the template lookup. |
 | `params` | no | an **ordered list** of body variables (`{{1}}`, `{{2}}`, …). A `{name: value}` object sends named variables instead. |
 | `buttons` | no | up to 3 items, each `{"type": "URL", "value": "<dynamic url suffix>"}` or `{"type": "COPY_CODE", "value": "<otp>"}`. They are applied by position: the 1st item fills template button 0, and so on. |
@@ -60,6 +60,13 @@ The `type` field picks one of two message types. If `type` is missing, the messa
 | BILL | `BILL` (UTILITY) | `[store name, bill no, total]` | `[{"type":"URL","value":"<bill token>"}]` | `pos_ticket` / ticket id |
 | OTP | `OTP` (AUTHENTICATION) | `[code]` | `[{"type":"COPY_CODE","value":"<code>"}]` | `otp_challenge` / challenge id. Each challenge has its own id, so a resend is a new message. |
 | PROMO | `PROMO_*` (MARKETING) | the campaign's params | the campaign's buttons | `campaign` / `"<campaign_id>:<customer_id>"` |
+| STAFF | `STAFF_COUNT_DUE` / `STAFF_HANDOVER` (UTILITY) | `[restaurant, kit name]` | none | `custody_kit` / `"<kind>:<kit_id>:<YYYY-MM-DD>"` (one per kit per day) |
+| STAFF | `STAFF_DEDUCTION` (UTILITY) | `[restaurant, item, amount]` | none | `custody_kit` / `"DEDUCTION:<kit_id>:<YYYY-MM-DD>"` |
+
+STAFF messages go to employees (inventory-service reminders). Like BILL they skip the marketing
+consent check and the PROMO frequency cap. The three STAFF templates are platform rows seeded
+`PENDING` (`sg_staff_count_due`, `sg_staff_handover`, `sg_staff_deduction`); tenants can't
+override them.
 
 ### What the sender does
 

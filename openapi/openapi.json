@@ -2759,7 +2759,8 @@
         "enum": [
           "BILL",
           "PROMO",
-          "OTP"
+          "OTP",
+          "STAFF"
         ],
         "title": "Purpose",
         "type": "string"
@@ -2847,7 +2848,7 @@
         "type": "string"
       },
       "TemplateUpsertRequest": {
-        "description": "Tenant mapping of a promotion template. BILL / OTP are platform templates on the shared\nnumber and can't be overridden per tenant (they're managed by the platform operator).",
+        "description": "Tenant mapping of a promotion template. BILL / OTP / STAFF_* are platform templates on the\nshared number and can't be overridden per tenant (they're managed by the platform operator).",
         "properties": {
           "code": {
             "examples": [

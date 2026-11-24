@@ -5,6 +5,8 @@ WhatsApp messaging for the platform:
 - **e-bills** after payment
 - **promotional campaigns** to customers who opted in
 - **OTP** sign-in codes
+- **STAFF** reminders to employees (inventory-service: count due, handover to accept, deduction
+  to explain)
 
 Everything goes through one shared platform number, behind a **provider-neutral interface**. Meta
 Cloud API is implemented now. Gupshup, Karix, Route Mobile and Kaleyra each need only one adapter
@@ -14,7 +16,7 @@ in `providers/` plus a config change.
 - **HTTP spec:** `openapi/openapi.json`
 
 ```
-order-service / user-service / campaign scheduler ─▶ SQS sg-notify-send (+ DLQ after 5)
+order-service / user-service / inventory-service / campaign scheduler ─▶ SQS sg-notify-send (+ DLQ after 5)
                                                          │  batch 10, reserved concurrency 5
                                                          ▼
                                            sender Lambda ─▶ WhatsAppProvider (meta | fake | …)
@@ -36,7 +38,7 @@ Errors are RFC 7807. Lists use cursors: `?cursor=&limit=` returns `{items, next_
 | `GET /notify/customers?consent=OPTED_IN\|OPTED_OUT\|NONE&phone=` | `notify:read` | customers with their latest consent |
 | `GET /notify/customers/{id}` | `notify:read` | consent history, newest first |
 | `POST /notify/customers/{id}/opt-out` | `notify:write` | `{note}` → appends an `ADMIN` opt-out |
-| `GET/PUT /notify/templates` | read / write | maps a code (+ language) to the provider's template name, category and status. Platform rows (BILL, OTP) are read-only. |
+| `GET/PUT /notify/templates` | read / write | maps a code (+ language) to the provider's template name, category and status. Platform rows (BILL, OTP, STAFF_*) are read-only. |
 | `GET/PUT /notify/settings` | read / write | `{promo_cap_days}` (default 7; 0 = no cap) |
 | `GET/POST /notify/campaigns`, `GET/PUT /notify/campaigns/{id}` | read / write | PUT works only while the campaign is a DRAFT |
 | `POST /notify/campaigns/{id}/estimate` | `notify:read` | recipients × (rate + markup) + 18% GST, in paise |
@@ -88,8 +90,9 @@ After a lookup, every write happens in a tenant-scoped session.
 without a BYPASSRLS role, which is broader than these id-only tables.
 
 **Templates for the shared number:**
-- The migration seeds platform `BILL` (`sg_bill`, UTILITY) and `OTP` (`sg_otp`, AUTHENTICATION)
-  with status PENDING.
+- The migrations seed platform `BILL` (`sg_bill`, UTILITY), `OTP` (`sg_otp`, AUTHENTICATION) and
+  `STAFF_COUNT_DUE` / `STAFF_HANDOVER` / `STAFF_DEDUCTION` (`sg_staff_count_due`,
+  `sg_staff_handover`, `sg_staff_deduction`, UTILITY) with status PENDING.
 - Once Meta approves them, set the real names and status as the DB admin, e.g.
   `UPDATE wa_template SET provider_template_name='…', status='APPROVED' WHERE tenant_id IS NULL AND code='BILL';`
 - Tenants map their own `PROMO_*` templates through `PUT /notify/templates`.
